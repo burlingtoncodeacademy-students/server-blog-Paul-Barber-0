@@ -51,7 +51,7 @@ router.post('/:id', (req, res) => {
             const db = JSON.parse(data);
             db.push(blogPost);
 
-            fs.writeFile(fsPath, JSON.stringify(data), err => console.log(err));
+            fs.writeFile(fsPath, JSON.stringify(db), err => console.log(err));
                 res.status(200).json({
                     status: 'New post created!',
                     object: blogPost
@@ -66,19 +66,36 @@ router.post('/:id', (req, res) => {
 })
 
 //Update one blog posts
-router.put('/', (req, res) => {
+router.put('/:id', (req, res) => {
     try {
-        let results;
-        if(test) {
-            res.status(200).json({
-                object: results
+        let id = parseInt(req.params.id);
+        let blogPost = req.body;
+        blogPost.post_id = id;
+
+        fs.readFile(fsPath, (err, data) => {
+            if (err) throw err;
+            const db = JSON.parse(data);
+            let postFound = false;
+
+            db.forEach((obj, i) => {
+                if(obj.post_id === id) {
+                    postFound = true;
+                    db[i] = blogPost;
+                }
             })
 
-        } else {
-            res.status(404).json({
-                message: `id: ${id} not found.`
-            })
-        }
+            if(postFound) {
+                fs.writeFile(fsPath, JSON.stringify(db), err => console.log(err));
+                res.status(200).json({
+                    status: 'Post updated!',
+                    object: blogPost
+                })
+            } else {
+                res.status(404).json({
+                    message: `id: ${id} not found.`
+                })
+            }
+        })
     } catch (err) {
         res.status(500).json({
             message: err.message
@@ -89,17 +106,32 @@ router.put('/', (req, res) => {
 //Delete one blog posts
 router.delete('/:id', (req, res) => {
     try {
-        let results;
-        if(test) {
-            res.status(200).json({
-                object: results
-            })
+        let id = parseInt(req.params.id);
+        
+        fs.readFile(fsPath, (err, data) => {
+            if(err) throw err;
+            const db = JSON.parse(data);
+            let foundPost = false;
+            let newDB = [];
 
-        } else {
-            res.status(404).json({
-                message: `id: ${id} not found.`
+            db.forEach((obj, i) => {
+                obj.post_id === id ?
+                    foundPost = true :
+                    newDB.push(obj);
             })
-        }
+            if(foundPost) {
+                fs.writeFile(fsPath, JSON.stringify(newDB), err => console.log(err));
+                res.status(200).json({
+                    message: `Post ${id} deleted!`
+                })
+    
+            } else {
+                res.status(404).json({
+                    message: `id: ${id} not found.`
+                })
+            }
+
+        })
     } catch (err) {
         res.status(500).json({
             message: err.message
